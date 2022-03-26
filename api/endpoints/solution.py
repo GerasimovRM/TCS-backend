@@ -36,7 +36,6 @@ async def get_solution_count(group_id: int,
         .where(Solution.group_id == group_id,
                Solution.course_id == course_id,
                Solution.task_id == task_id,
-               Solution.user_id == current_user.id,
                or_(Solution.status == SolutionStatus.COMPLETE,
                    Solution.status == SolutionStatus.COMPLETE_NOT_MAX))
     query = await session.execute(q)
