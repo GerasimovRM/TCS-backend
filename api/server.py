@@ -30,6 +30,14 @@ app.include_router(task_router)
 app.include_router(chat_message_router)
 
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
 # app.state.database = database
 
 
@@ -88,15 +96,6 @@ async def startup() -> None:
 async def shutdown() -> None:
     # TODO: close connection
     pass
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://tcs-fronend.web.app", "http://127.0.0.1:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
 
 
 if __name__ == "__main__":
