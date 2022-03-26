@@ -79,7 +79,7 @@ async def login(
             await session.commit()
         jwt_access_token = await create_access_token_user(db_user, session)
         jwt_refresh_token = await create_refresh_token_user(db_user, session, refresh_token)
-        response.set_cookie("refresh_token", jwt_refresh_token, httponly=True)
+        response.set_cookie("refresh_token", jwt_refresh_token, httponly=True, samesite="none", secure=True)
         return TokenWithUserData(access_token=jwt_access_token, user=UserDto.from_orm(db_user))
     except ValidationError as e:
         raise HTTPException(
@@ -100,7 +100,7 @@ async def refresh(response: Response,
         db_user = db_refresh_token.user
         jwt_access_token = await create_access_token_user(db_user, session)
         jwt_refresh_token = await create_refresh_token_user(db_user, session, refresh_token)
-        response.set_cookie("refresh_token", jwt_refresh_token, httponly=True)
+        response.set_cookie("refresh_token", jwt_refresh_token, httponly=True, samesite="none", secure=True)
         return TokenWithUserData(access_token=jwt_access_token, user=UserDto.from_orm(db_user))
     else:
         raise HTTPException(
