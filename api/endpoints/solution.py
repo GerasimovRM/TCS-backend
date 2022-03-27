@@ -88,6 +88,30 @@ async def get_solution(group_id: int,
         return
 
 
+@router.post("/change_score", response_model=SolutionResponse)
+async def change_solution_score(solution_id: int,
+                                new_score: Optional[int],
+                                is_rework: bool = False,
+                                current_user: User = Depends(get_current_active_user),
+                                session: AsyncSession = Depends(get_session)):
+    # TODO: secure
+    query = await session.execute(select(Solution)
+                                  .where(Solution.id == solution_id)
+                                  .options(joinedload(Solution.task)))
+    solution = query.scalars().first()
+    if is_rework or new_score == 0:
+        solution.score = 0
+        solution.status = SolutionStatus.ERROR
+    else:
+        solution.score = new_score
+        if new_score == solution.task.max_score:
+            solution.status = SolutionStatus.COMPLETE
+        else:
+            solution.status = SolutionStatus.COMPLETE_NOT_MAX
+    await session.commit()
+    return SolutionResponse.from_orm(solution)
+
+
 @router.post("/post_one", response_model=SolutionResponse)
 async def post_solution(group_id: int,
                         course_id: int,

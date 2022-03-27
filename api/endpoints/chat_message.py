@@ -53,3 +53,4 @@ async def post_message(group_id: int,
                      from_id=current_user.id)
     session.add(cm)
     await session.commit()
+    return ChatMessageDto.from_orm(cm)
