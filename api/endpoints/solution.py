@@ -78,9 +78,20 @@ async def get_solution_best(group_id: int,
         .where(Solution.group_id == group_id,
                Solution.course_id == course_id,
                Solution.task_id == task_id,
+               Solution.user_id == (user_id if user_id else current_user.id),
+               Solution.status == SolutionStatus.ON_REVIEW)
+    query = await session.execute(q)
+    solution_on_review = query.scalars().first()
+    if solution_on_review:
+        return SolutionResponse.from_orm(solution_on_review)
+
+    q = select(Solution) \
+        .where(Solution.group_id == group_id,
+               Solution.course_id == course_id,
+               Solution.task_id == task_id,
                Solution.user_id == (user_id if user_id else current_user.id)) \
-        .order_by(Solution.score.desc(),
-                  Solution.status.desc(),
+        .order_by(Solution.status.desc(),
+                  Solution.score.desc(),
                   Solution.time_start.desc())
     query = await session.execute(q)
     solution = query.scalars().first()
