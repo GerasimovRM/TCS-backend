@@ -65,6 +65,29 @@ async def get_students_solution(group_id: int,
                                  time_finish=solution.time_finish) for solution in solutions]
 
 
+@router.get("/students_group", response_model=List[UserDto])
+async def get_students_group(group_id: int,
+                             current_user: User = Depends(get_current_active_user),
+                             session: AsyncSession = Depends(get_session)) -> List[UserDto]:
+    query = await session.execute(select(UsersGroups)
+                                  .where(UsersGroups.user == current_user,
+                                         UsersGroups.group_id == group_id,
+                                         UsersGroups.role != UserGroupRole.STUDENT))
+    group_user = query.scalars().first()
+    if not group_user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bad access to group")
+
+    query = await session.execute(select(UsersGroups).join(UsersGroups.user)
+                                  .where(UsersGroups.group_id == group_id,
+                                         UsersGroups.role == UserGroupRole.STUDENT)
+                                  .options(joinedload(UsersGroups.user))
+                                  .order_by(User.last_name.asc()))
+    group_users = query.scalars().all()
+    return list(map(UserDto.from_orm, map(lambda t: t.user, group_users)))
+
+
 @router.post("/change_password/")
 async def change_password(new_password: str,
                           current_password: Optional[str] = None,
