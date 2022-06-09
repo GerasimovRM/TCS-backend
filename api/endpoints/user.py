@@ -10,7 +10,8 @@ from database import User, Group, UsersGroups, Course, CoursesLessons, Lesson, g
     GroupsCourses, Solution
 from models.pydantic_sqlalchemy_core import UserDto
 from models.site.user import StudentsWithSolution
-from services.auth_service import get_current_active_user, get_current_user, get_password_hash
+from services.auth_service import get_current_active_user, get_current_user, get_password_hash, \
+    get_admin
 from services.auth_service import verify_password
 
 router = APIRouter(
@@ -21,11 +22,15 @@ router = APIRouter(
 
 @router.get("/", response_model=UserDto)
 async def get_user(user_id: int,
-                   current_user: User = Depends(get_current_active_user),
+                   current_user: User = Depends(get_admin),
                    session: AsyncSession = Depends(get_session)) -> UserDto:
     query = await session.execute(select(User)
                                   .where(User.id == user_id))
     user = query.scalars().first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id {user_id} not found")
     return UserDto.from_orm(user)
 
 

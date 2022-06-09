@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -9,6 +9,7 @@ class CoursesLessons(Base):
 
     lesson_id = Column(ForeignKey("dbo_lesson.id"), primary_key=True)
     course_id = Column(ForeignKey("dbo_course.id"), primary_key=True)
+    is_hidden = Column(Boolean, default=True)
 
     lesson = relationship("Lesson", back_populates="courses")
     course = relationship("Course", back_populates="lessons")

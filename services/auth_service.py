@@ -120,8 +120,10 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
     return current_user
 
 
-async def get_admin(current_user: User = Depends(get_current_active_user)) -> User:
-    admin = current_user.admin
+async def get_admin(current_user: User = Depends(get_current_active_user),
+                    session: AsyncSession = Depends(get_session)) -> User:
+    admin_query = await session.execute(select(Admin).where(Admin.user_id == current_user.id))
+    admin = admin_query.scalars().first()
     if not admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not admin")
     return current_user

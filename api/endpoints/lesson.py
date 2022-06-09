@@ -9,7 +9,6 @@ from database.users_groups import UserGroupRole, UsersGroups
 from models.pydantic_sqlalchemy_core import LessonDto
 from models.site.lesson import LessonsResponse, LessonResponse
 from services.auth_service import get_current_active_user
-from services.group_service import get_group_by_id
 from database import User, Group, get_session, GroupsCourses, Course, CoursesLessons
 
 router = APIRouter(

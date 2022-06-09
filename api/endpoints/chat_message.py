@@ -12,7 +12,6 @@ from models.pydantic_sqlalchemy_core import ChatMessageDto
 from models.site.group import GroupsResponse
 from models.site.task import TasksResponse
 from services.auth_service import get_current_active_user
-from services.group_service import get_group_by_id
 from database import User, Group, get_session, GroupsCourses, CoursesLessons, Lesson, LessonsTasks, \
     Solution, Image, ChatMessage
 

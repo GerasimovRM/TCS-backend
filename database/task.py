@@ -8,6 +8,12 @@ from database import Base
 from database.solution import SolutionStatus
 
 
+class TaskType(IntEnum):
+    CLASS_WORK = 1
+    HOME_WORK = 2
+    ADDITIONAL_WORK = 3
+
+
 class Task(Base):
     __tablename__ = "dbo_task"
 
@@ -16,6 +22,8 @@ class Task(Base):
     description = Column(String(4000), nullable=True)
     max_score = Column(Float)
     attachments = Column(JSON)
+    task_type = Column(Enum(TaskType))
+
 
     lessons = relationship("LessonsTasks", back_populates="task")
     solutions = relationship("Solution", back_populates="task")
