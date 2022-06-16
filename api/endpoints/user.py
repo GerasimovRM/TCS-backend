@@ -13,6 +13,9 @@ from models.site.user import StudentsWithSolution
 from services.auth_service import get_current_active_user, get_current_user, get_password_hash, \
     get_admin
 from services.auth_service import verify_password
+from services.solution_service import SolutionService
+from services.user_service import UserService
+from services.users_groups_service import UsersGroupsService
 
 router = APIRouter(
     prefix="/user",
@@ -21,12 +24,10 @@ router = APIRouter(
 
 
 @router.get("/", response_model=UserDto)
-async def get_user(user_id: int,
-                   current_user: User = Depends(get_admin),
-                   session: AsyncSession = Depends(get_session)) -> UserDto:
-    query = await session.execute(select(User)
-                                  .where(User.id == user_id))
-    user = query.scalars().first()
+async def get_user_by_id(user_id: int,
+                         current_user: User = Depends(get_current_active_user),
+                         session: AsyncSession = Depends(get_session)) -> UserDto:
+    user = await UserService.get_user_by_id(user_id, session)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -40,28 +41,19 @@ async def get_students_solution(group_id: int,
                                 task_id: int,
                                 current_user: User = Depends(get_current_active_user),
                                 session: AsyncSession = Depends(get_session)) -> List[StudentsWithSolution]:
-    query = await session.execute(select(UsersGroups)
-                                  .where(UsersGroups.user == current_user,
-                                         UsersGroups.group_id == group_id,
-                                         UsersGroups.role != UserGroupRole.STUDENT))
-    group_user = query.scalars().first()
+    group_user = await UsersGroupsService.get_user_groups_teacher_or_admin(user_id=current_user.id,
+                                                                           group_id=group_id,
+                                                                           session=session)
     if not group_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
-    row_column = func.row_number() \
-        .over(partition_by=Solution.user_id,
-              order_by=(desc(Solution.score), desc(Solution.status))) \
-        .label('row_number')
-    q = select(Solution, row_column) \
-        .select_from(Solution) \
-        .where(Solution.group_id == group_id,
-               Solution.course_id == course_id,
-               Solution.task_id == task_id) \
-        .order_by(Solution.time_start.asc())
+    solutions_with_order = await SolutionService.get_last_solutions(group_id=group_id,
+                                                                    course_id=course_id,
+                                                                    task_id=task_id,
+                                                                    session=session)
 
-    query = await session.execute(q)
-    solutions = list(map(lambda s: s[0], filter(lambda t: t[1] == 1, query.fetchall())))
+    solutions = list(map(lambda s: s[0], filter(lambda t: t[1] == 1, solutions_with_order)))
 
     return [StudentsWithSolution(user_id=solution.user_id,
                                  score=solution.score,
@@ -74,22 +66,16 @@ async def get_students_solution(group_id: int,
 async def get_students_group(group_id: int,
                              current_user: User = Depends(get_current_active_user),
                              session: AsyncSession = Depends(get_session)) -> List[UserDto]:
-    query = await session.execute(select(UsersGroups)
-                                  .where(UsersGroups.user == current_user,
-                                         UsersGroups.group_id == group_id,
-                                         UsersGroups.role != UserGroupRole.STUDENT))
-    group_user = query.scalars().first()
+    group_user = await UsersGroupsService.get_user_groups_teacher_or_admin(user_id=current_user.id,
+                                                                           group_id=group_id,
+                                                                           session=session)
     if not group_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
 
-    query = await session.execute(select(UsersGroups).join(UsersGroups.user)
-                                  .where(UsersGroups.group_id == group_id,
-                                         UsersGroups.role == UserGroupRole.STUDENT)
-                                  .options(joinedload(UsersGroups.user))
-                                  .order_by(User.last_name.asc()))
-    group_users = query.scalars().all()
+    group_users = await UsersGroupsService.get_group_users(group_id=group_id,
+                                                           session=session)
     return list(map(UserDto.from_orm, map(lambda t: t.user, group_users)))
 
 
