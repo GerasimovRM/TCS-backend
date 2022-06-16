@@ -10,9 +10,19 @@ from database.users_groups import UserGroupRole
 
 class UsersGroupsService:
     @staticmethod
+    async def get_user_group(user_id: int,
+                             group_id: int,
+                             session: AsyncSession) -> UsersGroups:
+        query = await session.execute(select(UsersGroups)
+                                      .where(UsersGroups.user_id == user_id,
+                                             UsersGroups.group_id == group_id))
+        user_group = query.scalars().first()
+        return user_group
+
+    @staticmethod
     async def get_user_groups_teacher_or_admin(user_id: int,
-                                         group_id: int,
-                                         session: AsyncSession) -> UsersGroups:
+                                               group_id: int,
+                                               session: AsyncSession) -> UsersGroups:
         query = await session.execute(select(UsersGroups)
                                       .where(UsersGroups.user_id == user_id,
                                              UsersGroups.group_id == group_id,
@@ -30,6 +40,3 @@ class UsersGroupsService:
                                       .order_by(User.last_name.asc()))
         group_users = query.scalars().all()
         return group_users
-
-
-

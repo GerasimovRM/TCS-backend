@@ -10,6 +10,9 @@ from models.pydantic_sqlalchemy_core import CourseDto
 from models.site.course import CoursesResponse, CourseResponse
 from services.auth_service import get_current_active_user
 from database import User, Course, Group, get_session, GroupsCourses
+from services.group_course_serivce import GroupCourseService
+from services.group_service import GroupService
+from services.users_groups_service import UsersGroupsService
 
 router = APIRouter(
     prefix="/course",
@@ -21,21 +24,14 @@ router = APIRouter(
 async def get_courses(group_id: int,
                       current_user: User = Depends(get_current_active_user),
                       session: AsyncSession = Depends(get_session)) -> CoursesResponse:
-    # check group access
-    query = await session.execute(select(UsersGroups)
-                                  .where(UsersGroups.user == current_user,
-                                         UsersGroups.group_id == group_id))
-
-    user_group = query.scalars().first()
+    user_group = await UsersGroupsService.get_user_group(user_id=current_user.id,
+                                                         group_id=group_id,
+                                                         session=session)
     if not user_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
-    query = await session.execute(select(Group)
-        .where(Group.id == user_group.group_id)
-        .options(
-        joinedload(Group.courses).joinedload(GroupsCourses.course)))
-    group = query.scalars().first()
+    group = await GroupService.get_group_by_id_with_courses(group_id, session)
     courses_dto = list(map(lambda t: CourseDto.from_orm(t.course), group.courses))
     return CoursesResponse(courses=courses_dto)
 
@@ -46,18 +42,12 @@ async def get_courses(group_id: int,
                       current_user: User = Depends(get_current_active_user),
                       session: AsyncSession = Depends(get_session)) -> CourseResponse:
     # check group access
-    query = await session.execute(select(UsersGroups)
-                                  .where(UsersGroups.user == current_user,
-                                         UsersGroups.group_id == group_id))
-
-    user_group = query.scalars().first()
+    user_group = await UsersGroupsService.get_user_group(user_id=current_user.id,
+                                                         group_id=group_id,
+                                                         session=session)
     if not user_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
-    query = await session.execute(select(GroupsCourses)
-                                  .where(GroupsCourses.group_id == group_id)
-                                  .where(GroupsCourses.course_id == course_id)
-                                  .options(joinedload(GroupsCourses.course)))
-    group_course = query.scalars().first()
+    group_course = await GroupCourseService.get_group_course_with_courses(group_id, course_id, session)
     return CourseResponse.from_orm(group_course.course)
