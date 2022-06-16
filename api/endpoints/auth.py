@@ -16,6 +16,8 @@ from models.site.token import TokenWithUserData
 from models.response_vk_access_token import ResponseVkAccessToken
 from services.auth_service import create_access_token_user, create_refresh_token_user
 from services.auth_service import get_password_hash
+from services.refresh_token_service import RefreshTokenService
+from services.user_service import UserService
 from services.vk_service import get_vk_user_with_photo
 
 router = APIRouter(
@@ -55,9 +57,7 @@ async def login(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail=response_data)
     try:
-        t = select(User).where(User.vk_id == response_vk_access_token.user_id)
-        query = await session.execute(t)
-        db_user = query.scalars().first()
+        db_user = await UserService.get_user_by_vk_id(response_vk_access_token.user_id)
         if db_user:
             if password:
                 raise HTTPException(
@@ -92,10 +92,7 @@ async def login(
 async def refresh(response: Response,
                   refresh_token: Optional[str] = Cookie(None),
                   session: AsyncSession = Depends(get_session)):
-    query = await session.execute(select(RefreshToken)
-                                  .where(RefreshToken.token == refresh_token)
-                                  .options(joinedload(RefreshToken.user)))
-    db_refresh_token = query.scalars().first()
+    db_refresh_token = await RefreshTokenService.get_refresh_token(refresh_token, session)
     if db_refresh_token:
         db_user = db_refresh_token.user
         jwt_access_token = await create_access_token_user(db_user, session)
