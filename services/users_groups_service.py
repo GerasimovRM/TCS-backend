@@ -40,15 +40,6 @@ class UsersGroupsService:
         return user_group
 
     @staticmethod
-    async def get_user_groups(user_id: int,
-                              session: AsyncSession) -> List[UsersGroups]:
-        query = await session.execute(select(UsersGroups)
-                                      .where(UsersGroups.user_id == user_id)
-                                      .options(joinedload(UsersGroups.group)))
-        user_groups = query.scalars().all()
-        return user_groups
-
-    @staticmethod
     async def get_group_users(group_id: int,
                               session: AsyncSession) -> List[User]:
         query = await session.execute(select(UsersGroups).join(UsersGroups.user)
