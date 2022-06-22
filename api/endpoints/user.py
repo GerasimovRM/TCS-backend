@@ -41,19 +41,18 @@ async def get_students_solution(group_id: int,
                                 task_id: int,
                                 current_user: User = Depends(get_current_active_user),
                                 session: AsyncSession = Depends(get_session)) -> List[StudentsWithSolution]:
-    group_user = await UsersGroupsService.get_user_groups_teacher_or_admin(user_id=current_user.id,
-                                                                           group_id=group_id,
-                                                                           session=session)
+    group_user = await UsersGroupsService.get_user_group_teacher_or_admin(user_id=current_user.id,
+                                                                          group_id=group_id,
+                                                                          session=session)
     if not group_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
-    solutions_with_order = await SolutionService.get_last_solutions(group_id=group_id,
-                                                                    course_id=course_id,
-                                                                    task_id=task_id,
-                                                                    session=session)
 
-    solutions = list(map(lambda s: s[0], filter(lambda t: t[1] == 1, solutions_with_order)))
+    solutions = await SolutionService.get_best_solutions(group_id,
+                                                         course_id,
+                                                         task_id,
+                                                         session)
 
     return [StudentsWithSolution(user_id=solution.user_id,
                                  score=solution.score,
@@ -66,9 +65,9 @@ async def get_students_solution(group_id: int,
 async def get_students_group(group_id: int,
                              current_user: User = Depends(get_current_active_user),
                              session: AsyncSession = Depends(get_session)) -> List[UserDto]:
-    group_user = await UsersGroupsService.get_user_groups_teacher_or_admin(user_id=current_user.id,
-                                                                           group_id=group_id,
-                                                                           session=session)
+    group_user = await UsersGroupsService.get_user_group_teacher_or_admin(user_id=current_user.id,
+                                                                          group_id=group_id,
+                                                                          session=session)
     if not group_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

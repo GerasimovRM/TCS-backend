@@ -29,12 +29,12 @@ async def get_messages(group_id: int,
                        user_id: Optional[int] = None,
                        current_user=Depends(get_current_active_user),
                        session: AsyncSession = Depends(get_session)) -> List[ChatMessageDto]:
-    user_messages = await ChatMessageService.get_user_messages(group_id=group_id,
-                                                               course_id=course_id,
-                                                               task_id=task_id,
-                                                               user_id=(user_id if user_id else current_user.id),
-                                                               session=session)
-    return list(map(ChatMessageDto.from_orm, user_messages))
+    chat_messages = await ChatMessageService.get_chat_messages(group_id,
+                                                               course_id,
+                                                               task_id,
+                                                               (user_id if user_id else current_user.id),
+                                                               session)
+    return list(map(ChatMessageDto.from_orm, chat_messages))
 
 
 @router.post("/post_one")

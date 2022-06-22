@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import User
+from database import User, Admin, Teacher
 
 
 class UserService:
@@ -20,3 +20,32 @@ class UserService:
         query = await session.execute(t)
         db_user = query.scalars().first()
         return db_user
+
+    @staticmethod
+    async def is_admin(user_id: int,
+                       session: AsyncSession) -> bool:
+        admin_query = await session.execute(select(Admin)
+                                            .where(Admin.user_id == user_id))
+        admin = admin_query.scalars().first()
+        if admin:
+            return True
+        else:
+            return False
+
+    @staticmethod
+    async def is_teacher(user_id: int,
+                         session: AsyncSession) -> bool:
+        teacher_query = await session.execute(select(Teacher)
+                                              .where(Teacher.user_id == user_id))
+        teacher = teacher_query.scalars().first()
+        if teacher:
+            return True
+        else:
+            return False
+
+    @staticmethod
+    async def is_admin_or_teacher(user_id: int,
+                                  session: AsyncSession) -> bool:
+        is_admin = await UserService.is_teacher(user_id, session)
+        is_teacher = await UserService.is_teacher(user_id, session)
+        return is_teacher or is_admin

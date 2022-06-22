@@ -8,7 +8,7 @@ from database import ChatMessage
 
 class ChatMessageService:
     @staticmethod
-    async def get_user_messages(group_id: int,
+    async def get_chat_messages(group_id: int,
                                 course_id: int,
                                 task_id: int,
                                 user_id: int,
@@ -18,5 +18,4 @@ class ChatMessageService:
                                          ChatMessage.course_id == course_id,
                                          ChatMessage.task_id == task_id,
                                          ChatMessage.user_id == user_id))
-        user_messages = q.scalars().first()
-        return user_messages
+        return q.scalars().all()

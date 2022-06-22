@@ -12,7 +12,8 @@ from database import User, UsersGroups, CoursesLessons, get_session, GroupsCours
 from models.pydantic_sqlalchemy_core import SolutionDto
 from models.site.solution import SolutionsCountResponse, SolutionResponse
 from services.auth_service import get_current_active_user
-
+from services.solution_service import SolutionService
+from services.users_groups_service import UsersGroupsService
 
 router = APIRouter(
     prefix="/solution",
@@ -20,34 +21,16 @@ router = APIRouter(
 )
 
 
-@router.get("/get_count", response_model=SolutionsCountResponse)
+@router.get("/get_count", response_model=Optional[SolutionsCountResponse])
 async def get_solution_count(group_id: int,
                              course_id: int,
                              task_id: int,
                              current_user: User = Depends(get_current_active_user),
-                             session: AsyncSession = Depends(get_session)) -> SolutionsCountResponse:
-    q = select(UsersGroups) \
-        .where(UsersGroups.group_id == group_id,
-               UsersGroups.role == UserGroupRole.STUDENT) \
-        .options(joinedload(UsersGroups.user))
-    query = await session.execute(q)
-    user_groups = query.scalars().all()
+                             session: AsyncSession = Depends(get_session)) -> Optional[SolutionsCountResponse]:
+    user_groups = await UsersGroupsService.get_group_users(group_id, session)
     solutions_count = len(user_groups)
 
-    row_column = func.row_number() \
-        .over(partition_by=Solution.user_id,
-              order_by=(desc(Solution.score), desc(Solution.status))) \
-        .label('row_number')
-
-    q = select(Solution, row_column) \
-        .select_from(Solution) \
-        .where(Solution.group_id == group_id,
-               Solution.course_id == course_id,
-               Solution.task_id == task_id) \
-        .order_by(Solution.time_start.asc())
-
-    query = await session.execute(q)
-    solutions = list(map(lambda s: s[0], filter(lambda t: t[1] == 1, query.fetchall())))
+    solutions = await SolutionService.get_best_solutions(group_id, course_id, task_id, session)
 
     solutions_complete_count = len(list(filter(lambda sol: sol.status == SolutionStatus.COMPLETE, solutions)))
     solutions_complete_not_max_count = len(list(filter(lambda sol: sol.status == SolutionStatus.COMPLETE_NOT_MAX, solutions)))
@@ -74,27 +57,19 @@ async def get_solution_best(group_id: int,
                             user_id: Optional[int] = None,
                             current_user: User = Depends(get_current_active_user),
                             session: AsyncSession = Depends(get_session)) -> Optional[SolutionResponse]:
-    q = select(Solution) \
-        .where(Solution.group_id == group_id,
-               Solution.course_id == course_id,
-               Solution.task_id == task_id,
-               Solution.user_id == (user_id if user_id else current_user.id),
-               Solution.status == SolutionStatus.ON_REVIEW)
-    query = await session.execute(q)
-    solution_on_review = query.scalars().first()
+    solution_on_review = await SolutionService.get_user_solutions_on_review(group_id,
+                                                                            course_id,
+                                                                            task_id,
+                                                                            (user_id if user_id else current_user.id),
+                                                                            session)
     if solution_on_review:
         return SolutionResponse.from_orm(solution_on_review)
 
-    q = select(Solution) \
-        .where(Solution.group_id == group_id,
-               Solution.course_id == course_id,
-               Solution.task_id == task_id,
-               Solution.user_id == (user_id if user_id else current_user.id)) \
-        .order_by(Solution.status.desc(),
-                  Solution.score.desc(),
-                  Solution.time_start.desc())
-    query = await session.execute(q)
-    solution = query.scalars().first()
+    solution = await SolutionService.get_best_user_solution(group_id,
+                                                            course_id,
+                                                            task_id,
+                                                            (user_id if user_id else current_user.id),
+                                                            session)
     if solution:
         return SolutionResponse.from_orm(solution)
     else:
@@ -129,10 +104,7 @@ async def change_solution_score(solution_id: int,
                                 current_user: User = Depends(get_current_active_user),
                                 session: AsyncSession = Depends(get_session)):
     # TODO: secure
-    query = await session.execute(select(Solution)
-                                  .where(Solution.id == solution_id)
-                                  .options(joinedload(Solution.task)))
-    solution = query.scalars().first()
+    solution = await SolutionService.get_solution_by_id(solution_id, session)
     if is_rework or new_score == 0:
         solution.score = 0
         solution.status = SolutionStatus.ERROR

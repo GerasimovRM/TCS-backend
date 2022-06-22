@@ -8,7 +8,7 @@ from database import RefreshToken
 class RefreshTokenService:
     @staticmethod
     async def get_refresh_token(refresh_token: str,
-                          session: AsyncSession) -> RefreshToken:
+                                session: AsyncSession) -> RefreshToken:
         query = await session.execute(select(RefreshToken)
                                       .where(RefreshToken.token == refresh_token)
                                       .options(joinedload(RefreshToken.user)))
