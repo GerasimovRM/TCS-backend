@@ -16,7 +16,7 @@ async def initialize_database():
     #async with engine.begin() as database_connection:
         # await database_connection.run_sync(metadata.drop_all)
         # await database_connection.run_sync(metadata.create_all)
-        pass
+    pass
 
 
 async def get_session() -> AsyncSession:

@@ -10,6 +10,8 @@ from models.pydantic_sqlalchemy_core import GroupDto
 from models.site.group import GroupsResponse
 from services.auth_service import get_current_active_user
 from database import User, Group, get_session
+from services.group_course_serivce import GroupCourseService
+from services.users_groups_service import UsersGroupsService
 
 router = APIRouter(
     prefix="/group",
@@ -21,10 +23,9 @@ router = APIRouter(
 async def get_role(group_id: int,
                    current_user: User = Depends(get_current_active_user),
                    session: AsyncSession = Depends(get_session)) -> UserGroupRole:
-    query = await session.execute(select(UsersGroups)
-                                  .where(UsersGroups.user == current_user,
-                                         UsersGroups.group_id == group_id))
-    user_group: UsersGroups = query.scalars().first()
+    user_group = await UsersGroupsService.get_user_group(user_id=current_user.id,
+                                                         group_id=group_id,
+                                                         session=session)
     if not user_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -35,10 +36,8 @@ async def get_role(group_id: int,
 @router.get("/get_all", response_model=GroupsResponse)
 async def get_user_groups(current_user: User = Depends(get_current_active_user),
                           session: AsyncSession = Depends(get_session)) -> GroupsResponse:
-    query = await session.execute(select(UsersGroups)
-                                  .where(UsersGroups.user == current_user)
-                                  .options(joinedload(UsersGroups.group)))
-    user_groups = query.scalars().all()
+    user_groups = await UsersGroupsService.get_user_groups(user_id=current_user.id,
+                                                           session=session)
     groups = list(map(lambda t: t.group, user_groups))
     groups_dto = list(map(lambda t: GroupDto.from_orm(t), groups))
     return GroupsResponse(groups=sorted(groups_dto, key=lambda t: t.id))
