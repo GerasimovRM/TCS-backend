@@ -21,8 +21,8 @@ class GroupService:
     async def get_group_by_id_with_courses(group_id: int,
                                            session: AsyncSession) -> Group:
         query = await session.execute(select(Group)
-            .where(Group.id == group_id)
-            .options(
-            joinedload(Group.courses).joinedload(GroupsCourses.course)))
+                                      .where(Group.id == group_id)
+                                      .options(joinedload(Group.courses).joinedload(GroupsCourses.course)))
         group = query.scalars().first()
         return group
+

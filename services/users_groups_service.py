@@ -20,9 +20,18 @@ class UsersGroupsService:
         return user_group
 
     @staticmethod
-    async def get_user_groups_teacher_or_admin(user_id: int,
-                                               group_id: int,
-                                               session: AsyncSession) -> UsersGroups:
+    async def get_user_groups(user_id: int,
+                              session: AsyncSession) -> List[UsersGroups]:
+        query = await session.execute(select(UsersGroups)
+                                      .where(UsersGroups.user_id == user_id)
+                                      .options(joinedload(UsersGroups.group)))
+        user_groups = query.scalars().all()
+        return user_groups
+
+    @staticmethod
+    async def get_user_group_teacher_or_admin(user_id: int,
+                                              group_id: int,
+                                              session: AsyncSession) -> UsersGroups:
         query = await session.execute(select(UsersGroups)
                                       .where(UsersGroups.user_id == user_id,
                                              UsersGroups.group_id == group_id,
@@ -40,3 +49,4 @@ class UsersGroupsService:
                                       .order_by(User.last_name.asc()))
         group_users = query.scalars().all()
         return group_users
+

@@ -57,7 +57,7 @@ async def login(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail=response_data)
     try:
-        db_user = await UserService.get_user_by_vk_id(response_vk_access_token.user_id)
+        db_user = await UserService.get_user_by_vk_id(response_vk_access_token.user_id, session)
         if db_user:
             if password:
                 raise HTTPException(

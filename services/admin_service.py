@@ -8,3 +8,4 @@ class AdminService:
     async def get_admin(user_id: int,
                         session: AsyncSession) -> Admin:
         return await session.get(Admin, user_id)
+

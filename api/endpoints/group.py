@@ -10,6 +10,9 @@ from models.pydantic_sqlalchemy_core import GroupDto
 from models.site.group import GroupsResponse
 from services.auth_service import get_current_active_user
 from database import User, Group, get_session
+from services.group_service import GroupService
+from services.user_service import UserService
+from services.users_groups_service import UsersGroupsService
 
 router = APIRouter(
     prefix="/group",
@@ -21,10 +24,9 @@ router = APIRouter(
 async def get_role(group_id: int,
                    current_user: User = Depends(get_current_active_user),
                    session: AsyncSession = Depends(get_session)) -> UserGroupRole:
-    query = await session.execute(select(UsersGroups)
-                                  .where(UsersGroups.user == current_user,
-                                         UsersGroups.group_id == group_id))
-    user_group: UsersGroups = query.scalars().first()
+    user_group = await UsersGroupsService.get_user_group(current_user.id,
+                                                         group_id,
+                                                         session)
     if not user_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -35,10 +37,8 @@ async def get_role(group_id: int,
 @router.get("/get_all", response_model=GroupsResponse)
 async def get_user_groups(current_user: User = Depends(get_current_active_user),
                           session: AsyncSession = Depends(get_session)) -> GroupsResponse:
-    query = await session.execute(select(UsersGroups)
-                                  .where(UsersGroups.user == current_user)
-                                  .options(joinedload(UsersGroups.group)))
-    user_groups = query.scalars().all()
+    user_groups = await UsersGroupsService.get_user_groups(current_user.id,
+                                                           session)
     groups = list(map(lambda t: t.group, user_groups))
     groups_dto = list(map(lambda t: GroupDto.from_orm(t), groups))
     return GroupsResponse(groups=sorted(groups_dto, key=lambda t: t.id))
@@ -48,39 +48,35 @@ async def get_user_groups(current_user: User = Depends(get_current_active_user),
 async def get_group(group_id: int,
                     current_user: User = Depends(get_current_active_user),
                     session: AsyncSession = Depends(get_session)) -> GroupDto:
-    user_group_query = await session.execute(select(UsersGroups)
-                                             .where(UsersGroups.group_id == group_id,
-                                                    UsersGroups.user_id == current_user.id))
-    user_group = user_group_query.scalars().first()
+    user_group = await UsersGroupsService.get_user_group(current_user.id,
+                                                         group_id,
+                                                         session)
     if not user_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
-    group_query = await session.execute(select(Group)
-                                        .where(Group.id == group_id))
-    group = group_query.scalars().first()
+    group = await GroupService.get_group_by_id(group_id,
+                                               session)
     return GroupDto.from_orm(group)
 
 
-@router.post("/{group_id}", response_model=GroupDto)
-async def post_group(group_id: int,
-                     group_name: Optional[str] = None,
-                     current_user: User = Depends(get_current_active_user),
-                     session: AsyncSession = Depends(get_session)) -> GroupDto:
-    user_group_query = await session.execute(select(UsersGroups)
-                                             .where(UsersGroups.group_id == group_id,
-                                                    UsersGroups.user_id == current_user.id))
-    user_group = user_group_query.scalars().first()
+@router.put("/{group_id}", response_model=GroupDto)
+async def put_group(group_id: int,
+                    group_name: Optional[str] = None,  # TODO: to pydantic json validation fields
+                    current_user: User = Depends(get_current_active_user),
+                    session: AsyncSession = Depends(get_session)) -> GroupDto:
+    user_group = await UsersGroupsService.get_user_group(current_user.id,
+                                                         group_id,
+                                                         session)
     if not user_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
     role = user_group.role
-    group_query = await session.execute(select(Group)
-                                        .where(Group.id == group_id))
-    group = group_query.scalars().first()
-    if current_user.admin or role == UserGroupRole.OWNER:
-        if group_name:
+    group = await GroupService.get_group_by_id(group_id, session)
+    current_user_is_admin = await UserService.is_admin(current_user.id, session)
+    if current_user_is_admin or role == UserGroupRole.OWNER:
+        if group_name:  # TODO: убрать деревенщину. Сделать на общий случай нормальные json
             group.name = group_name
         await session.commit()
         return GroupDto.from_orm(group)
@@ -94,19 +90,17 @@ async def post_group(group_id: int,
 async def delete_group(group_id: int,
                        current_user: User = Depends(get_current_active_user),
                        session: AsyncSession = Depends(get_session)):
-    user_group_query = await session.execute(select(UsersGroups)
-                                             .where(UsersGroups.group_id == group_id,
-                                                    UsersGroups.user_id == current_user.id))
-    user_group = user_group_query.scalars().first()
+    user_group = await UsersGroupsService.get_user_group(current_user.id,
+                                                         group_id,
+                                                         session)
     if not user_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
     role = user_group.role
-    group_query = await session.execute(select(Group)
-                                        .where(Group.id == group_id))
-    group = group_query.scalars().first()
-    if current_user.admin or role == UserGroupRole.OWNER:
+    group = await GroupService.get_group_by_id(group_id, session)
+    current_user_is_admin = await UserService.is_admin(current_user.id, session)
+    if current_user_is_admin or role == UserGroupRole.OWNER:
         await session.delete(group)
         await session.commit()
         # TODO: сделать request общим классом
@@ -119,10 +113,10 @@ async def delete_group(group_id: int,
 
 @router.put("/", response_model=GroupDto)
 async def put_group(group_name: int,
-                    user: User = Depends(get_current_active_user),
+                    current_user: User = Depends(get_current_active_user),
                     session: AsyncSession = Depends(get_session)) -> GroupDto:
-    # TODO: проверить
-    if user.admin or user.teacher:
+    current_user_is_admin_or_teacher = await UserService.is_admin_or_teacher(current_user.id, session)
+    if current_user_is_admin_or_teacher:
         new_group = Group(name=group_name)
         session.add(new_group)
         await session.commit()
