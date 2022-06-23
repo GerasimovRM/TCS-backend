@@ -12,7 +12,7 @@ from services.auth_service import get_current_active_user
 from database import User, Group, get_session, GroupsCourses, Course, CoursesLessons
 from services.course_service import CourseService
 from services.courses_lessons_service import CoursesLessonsService
-from services.group_course_serivce import GroupCourseService
+from services.groups_courses_serivce import GroupsCoursesService
 from services.users_groups_service import UsersGroupsService
 
 router = APIRouter(
@@ -35,9 +35,9 @@ async def get_lessons(group_id: int,
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
 
-    group_course = await GroupCourseService.get_group_course(group_id,
-                                                             course_id,
-                                                             session)
+    group_course = await GroupsCoursesService.get_group_course(group_id,
+                                                               course_id,
+                                                               session)
     if not group_course:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -64,9 +64,9 @@ async def get_lesson(group_id: int,
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
 
-    group_course = await GroupCourseService.get_group_course(group_id,
-                                                             course_id,
-                                                             session)
+    group_course = await GroupsCoursesService.get_group_course(group_id,
+                                                               course_id,
+                                                               session)
     if not group_course:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

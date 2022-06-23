@@ -13,7 +13,7 @@ from models.pydantic_sqlalchemy_core import SolutionDto
 from models.site.solution import SolutionsCountResponse, SolutionResponse
 from services.auth_service import get_current_active_user
 from services.courses_lessons_service import CoursesLessonsService
-from services.group_course_serivce import GroupCourseService
+from services.groups_courses_serivce import GroupsCoursesService
 from services.lessons_tasks_service import LessonsTasksService
 from services.solution_service import SolutionService
 from services.user_service import UserService
@@ -37,9 +37,11 @@ async def get_solution_count(group_id: int,
     solutions = await SolutionService.get_best_solutions(group_id, course_id, task_id, session)
 
     solutions_complete_count = len(list(filter(lambda sol: sol.status == SolutionStatus.COMPLETE, solutions)))
-    solutions_complete_not_max_count = len(list(filter(lambda sol: sol.status == SolutionStatus.COMPLETE_NOT_MAX, solutions)))
+    solutions_complete_not_max_count = len(
+        list(filter(lambda sol: sol.status == SolutionStatus.COMPLETE_NOT_MAX, solutions)))
     solutions_complete_error_count = len(list(filter(lambda sol: sol.status == SolutionStatus.ERROR, solutions)))
-    solutions_complete_on_review_count = len(list(filter(lambda sol: sol.status == SolutionStatus.ON_REVIEW, solutions)))
+    solutions_complete_on_review_count = len(
+        list(filter(lambda sol: sol.status == SolutionStatus.ON_REVIEW, solutions)))
     solutions_undefined_count = solutions_count \
                                 - solutions_complete_count \
                                 - solutions_complete_not_max_count \
@@ -145,9 +147,9 @@ async def post_solution(group_id: int,
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
-    group_course = await GroupCourseService.get_group_course(group_id,
-                                                             course_id,
-                                                             session)
+    group_course = await GroupsCoursesService.get_group_course(group_id,
+                                                               course_id,
+                                                               session)
     if not group_course:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -199,9 +201,9 @@ async def post_solution(group_id: int,
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
-    group_course = await GroupCourseService.get_group_course(group_id,
-                                                             course_id,
-                                                             session)
+    group_course = await GroupsCoursesService.get_group_course(group_id,
+                                                               course_id,
+                                                               session)
     if not group_course:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

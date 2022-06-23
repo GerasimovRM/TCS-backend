@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 from database import GroupsCourses
 
 
-class GroupCourseService:
+class GroupsCoursesService:
     @staticmethod
     async def get_group_course(group_id: int,
                                course_id: int,

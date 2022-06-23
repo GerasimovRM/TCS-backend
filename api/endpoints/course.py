@@ -10,7 +10,7 @@ from models.pydantic_sqlalchemy_core import CourseDto
 from models.site.course import CoursesResponse, CourseResponse
 from services.auth_service import get_current_active_user
 from database import User, Course, Group, get_session, GroupsCourses
-from services.group_course_serivce import GroupCourseService
+from services.groups_courses_serivce import GroupsCoursesService
 from services.group_service import GroupService
 from services.users_groups_service import UsersGroupsService
 
@@ -49,5 +49,5 @@ async def get_courses(group_id: int,
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
-    group_course = await GroupCourseService.get_group_course_with_courses(group_id, course_id, session)
+    group_course = await GroupsCoursesService.get_group_course_with_courses(group_id, course_id, session)
     return CourseResponse.from_orm(group_course.course)
