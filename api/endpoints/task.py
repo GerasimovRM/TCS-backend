@@ -14,6 +14,10 @@ from models.site.task import TasksResponse
 from services.auth_service import get_current_active_user
 from database import User, Group, get_session, GroupsCourses, CoursesLessons, Lesson, LessonsTasks, \
     Solution, Image, ChatMessage
+from services.courses_lessons_service import CoursesLessonsService
+from services.groups_courses_serivce import GroupsCoursesService
+from services.lessons_tasks_service import LessonsTasksService
+from services.users_groups_service import UsersGroupsService
 
 router = APIRouter(
     prefix="/task",
@@ -29,40 +33,28 @@ async def get_tasks(group_id: int,
                     current_user: User = Depends(get_current_active_user),
                     session: AsyncSession = Depends(get_session)) -> TasksResponse:
     # check group access
-    query = await session.execute(select(UsersGroups)
-                                  .where(UsersGroups.user == current_user,
-                                         UsersGroups.group_id == group_id))
-
-    user_group = query.scalars().first()
+    user_group = await UsersGroupsService.get_user_group(current_user.id,
+                                                         group_id,
+                                                         session)
     if not user_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
-    query = await session.execute(select(GroupsCourses)
-                                  .where(GroupsCourses.group_id == group_id,
-                                         GroupsCourses.course_id == course_id))
     # check group access
-    group_course = query.scalars().first()
+    group_course = await GroupsCoursesService.get_group_course(group_id, course_id, session)
     if not group_course:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to course")
-    query = await session.execute(select(CoursesLessons)
-                                  .where(CoursesLessons.course_id == course_id,
-                                         CoursesLessons.lesson_id == lesson_id))
-    # check group access
-    course_lesson = query.scalars().first()
+    course_lesson = await CoursesLessonsService.get_course_lesson(course_id,
+                                                                  lesson_id,
+                                                                  session)
     if not course_lesson:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to lesson")
-    query = await session.execute(select(Lesson)
-                                  .where(Lesson.id == course_lesson.lesson_id)
-                                  .options(joinedload(Lesson.tasks)
-                                           .joinedload(LessonsTasks.task)))
-    lesson = query.scalars().first()
-    tasks_dto = list(map(lambda t: TaskDto.from_orm(t.task), lesson.tasks))
-
+    lesson_tasks = await LessonsTasksService.get_lesson_tasks(lesson_id, session)
+    tasks_dto = list(map(lambda t: TaskDto.from_orm(t.task), lesson_tasks))
     return TasksResponse(tasks=tasks_dto)
 
 
@@ -74,29 +66,23 @@ async def get_task(group_id: int,
                    current_user: User = Depends(get_current_active_user),
                    session: AsyncSession = Depends(get_session)) -> TaskDto:
     # check group access
-    query = await session.execute(select(UsersGroups)
-                                  .where(UsersGroups.user == current_user,
-                                         UsersGroups.group_id == group_id))
-
-    user_group = query.scalars().first()
+    user_group = await UsersGroupsService.get_user_group(current_user.id,
+                                                         group_id,
+                                                         session)
     if not user_group:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to group")
-    query = await session.execute(select(GroupsCourses)
-                                  .where(GroupsCourses.group_id == group_id,
-                                         GroupsCourses.course_id == course_id))
-    # check course access
-    group_course = query.scalars().first()
+    group_course = await GroupsCoursesService.get_group_course(group_id,
+                                                               course_id,
+                                                               session)
     if not group_course:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to course")
-    query = await session.execute(select(CoursesLessons)
-                                  .where(CoursesLessons.course_id == course_id,
-                                         CoursesLessons.lesson_id == lesson_id))
-    # check lesson access
-    course_lesson = query.scalars().first()
+    course_lesson = await CoursesLessonsService.get_course_lesson(course_id,
+                                                                  lesson_id,
+                                                                  session)
     if not course_lesson:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
