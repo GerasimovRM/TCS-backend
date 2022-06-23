@@ -103,7 +103,7 @@ async def delete_group(group_id: int,
     if current_user_is_admin or role == UserGroupRole.OWNER:
         await session.delete(group)
         await session.commit()
-        # TODO: сделать request общим классом
+        # TODO: сделать response общим классом
         return {"detail": "ok"}
     else:
         raise HTTPException(

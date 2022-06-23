@@ -49,4 +49,3 @@ class UsersGroupsService:
                                       .order_by(User.last_name.asc()))
         group_users = query.scalars().all()
         return group_users
-

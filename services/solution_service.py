@@ -29,11 +29,11 @@ class SolutionService:
         return solutions
 
     @staticmethod
-    async def get_user_solutions_on_review(group_id: int,
-                                           course_id: int,
-                                           task_id: int,
-                                           user_id: int,
-                                           session: AsyncSession) -> Solution:
+    async def get_user_solution_on_review(group_id: int,
+                                          course_id: int,
+                                          task_id: int,
+                                          user_id: int,
+                                          session: AsyncSession) -> Solution:
         q = select(Solution) \
             .where(Solution.group_id == group_id,
                    Solution.course_id == course_id,
@@ -54,7 +54,7 @@ class SolutionService:
             .where(Solution.group_id == group_id,
                    Solution.course_id == course_id,
                    Solution.task_id == task_id,
-                   Solution.user_id == user_id)\
+                   Solution.user_id == user_id) \
             .order_by(Solution.status.desc(),
                       Solution.score.desc(),
                       Solution.time_start.desc())
@@ -66,8 +66,19 @@ class SolutionService:
     async def get_solution(group_id: int,
                            course_id: int,
                            task_id: int,
-                           solution_id: int):
-        pass  # TODO: 22.06.2022
+                           solution_id: int,
+
+                           user_id: int,
+                           session: AsyncSession) -> Solution:
+        q = select(Solution) \
+            .where(Solution.group_id == group_id,
+                   Solution.course_id == course_id,
+                   Solution.task_id == task_id,
+                   Solution.user_id == user_id,
+                   Solution.id == solution_id)
+        query = await session.execute(q)
+        solution = query.scalars().first()
+        return solution
 
     @staticmethod
     async def get_solution_by_id(solution_id: int,
