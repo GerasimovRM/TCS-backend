@@ -87,11 +87,7 @@ async def get_task(group_id: int,
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bad access to lesson")
-    query = await session.execute(select(LessonsTasks)
-                                  .where(LessonsTasks.task_id == task_id,
-                                         LessonsTasks.lesson_id == lesson_id)
-                                  .options(joinedload(LessonsTasks.task)))
-    lesson_task = query.scalars().first()
+    lesson_task = await LessonsTasksService.get_lesson_task(lesson_id, task_id, session)
     if not lesson_task:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

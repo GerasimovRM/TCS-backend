@@ -1,11 +1,12 @@
 from typing import Optional
 from fastapi import APIRouter, status, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from models.site.course import CourseResponse
+from models.site.group import GroupResponse
 from services.auth_service import get_teacher_or_admin, get_admin
-from database import User, Group, UsersGroups, Course
+from database import User, Group, UsersGroups, Course, get_session
 from database.users_groups import UserGroupRole
-from models import GroupDto, CourseDto, CourseForTeacherOrAdminDto, UserDto
-
 
 router = APIRouter(
     prefix="/teacher",
@@ -13,33 +14,34 @@ router = APIRouter(
 )
 
 
-@router.post("/create_group", response_model=GroupDto)
+@router.post("/create_group", response_model=GroupResponse)
 async def create_group(group_name: str,
-                       current_user: User = Depends(get_teacher_or_admin)):
+                       current_user: User = Depends(get_teacher_or_admin),
+                       session: AsyncSession = Depends(get_session)) -> GroupResponse:
     group = Group(name=group_name)
-    await group.save()
+    session.add(group)
+    await session.commit()
     user_group = UsersGroups(user_group_role=UserGroupRole.OWNER,
                              group=group,
                              user=current_user)
-    await user_group.save()
-    return GroupDto(**group.dict())
+    await user_group.commit()
+    return GroupResponse(**group.dict())
 
 
-@router.post("/create_course", response_model=CourseDto)
+@router.post("/create_course", response_model=CourseResponse)
 async def create_course(course_name: str,
                         description: Optional[str],
-                        current_user: User = Depends(get_teacher_or_admin)):
+                        current_user: User = Depends(get_admin),
+                        session: AsyncSession = Depends(get_session)) -> CourseResponse:
     course = Course(name=course_name)
     if description:
         course.description = description
-    await course.save()
-    user_course = UsersCourses(user_course_role=UserCourseRole.OWNER,
-                               course=course,
-                               user=current_user)
-    await user_course.save()
-    return CourseDto(**course.dict())
+    session.add(course)
+    await session.commit()
+    return CourseResponse(**course.dict())
 
-
+# TODO: add entity to method
+"""
 @router.post("/add_teacher_or_admin_in_course")  # , response_model=CourseForTeacherOrAdminDto)
 async def add_teacher_in_course(course_id: int,
                                 user_id: int,
@@ -63,4 +65,5 @@ async def add_teacher_in_course(course_id: int,
         await new_user_course.save()
         users = list(map(lambda t: UserDto(**t.user.dict()),
                          await UsersCourses.objects.select_related("user").all(course=course)))
-        return CourseForTeacherOrAdminDto(**course.dict(), users=users) 
+        return CourseForTeacherOrAdminDto(**course.dict(), users=users)
+"""
