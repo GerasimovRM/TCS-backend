@@ -1,10 +1,10 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-from database import Base
+from database.base_meta import SQLAlchemyBase
 
 
-class Admin(Base):
+class Admin(SQLAlchemyBase):
     __tablename__ = "dbo_admin"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

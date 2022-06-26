@@ -5,10 +5,10 @@ from sqlalchemy import Column, Integer, String, Float, ForeignKeyConstraint, Boo
     DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
-from database import Base
+from database.base_meta import SQLAlchemyBase
 
 
-class ChatMessage(Base):
+class ChatMessage(SQLAlchemyBase):
     __tablename__ = "dbo_chat_message"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

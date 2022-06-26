@@ -2,9 +2,10 @@ from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship
 
 from database import Base
+from database.base_meta import SQLAlchemyBase
 
 
-class GroupsCourses(Base):
+class GroupsCourses(SQLAlchemyBase):
     __tablename__ = "dbo_groups_courses"
 
     group_id = Column(ForeignKey("dbo_group.id"), primary_key=True)

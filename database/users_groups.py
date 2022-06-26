@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 
 from database import Base
+from database.base_meta import SQLAlchemyBase
 
 
 class UserGroupRole(IntEnum):
@@ -12,7 +13,7 @@ class UserGroupRole(IntEnum):
     OWNER: int = 2
 
 
-class UsersGroups(Base):
+class UsersGroups(SQLAlchemyBase):
     __tablename__ = "dbo_users_groups"
 
     user_id = Column(ForeignKey("dbo_user.id"), primary_key=True)

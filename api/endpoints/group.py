@@ -111,11 +111,12 @@ async def delete_group(group_id: int,
             detail="Bad access to group")
 
 
-@router.put("/", response_model=GroupDto)
-async def put_group(group_name: int,
-                    current_user: User = Depends(get_current_active_user),
-                    session: AsyncSession = Depends(get_session)) -> GroupDto:
-    current_user_is_admin_or_teacher = await UserService.is_admin_or_teacher(current_user.id, session)
+@router.post("/", response_model=GroupDto)
+async def post_group(group_name: int,
+                     current_user: User = Depends(get_current_active_user),
+                     session: AsyncSession = Depends(get_session)) -> GroupDto:
+    current_user_is_admin_or_teacher = await UserService.is_admin_or_teacher(current_user.id,
+                                                                             session)
     if current_user_is_admin_or_teacher:
         new_group = Group(name=group_name)
         session.add(new_group)

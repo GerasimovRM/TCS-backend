@@ -4,9 +4,10 @@ from sqlalchemy import Column, Integer, String, Float, ForeignKey, LargeBinary
 from sqlalchemy.orm import relationship, backref
 
 from database import Base
+from database.base_meta import SQLAlchemyBase
 
 
-class Image(Base):
+class Image(SQLAlchemyBase):
     __tablename__ = "dbo_image"
 
     id = Column(String, primary_key=True, default=lambda: str(random.getrandbits(128)))

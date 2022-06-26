@@ -7,12 +7,13 @@ from sqlalchemy.orm import joinedload
 
 from database.users_groups import UserGroupRole, UsersGroups
 from models.pydantic_sqlalchemy_core import LessonDto
-from models.site.lesson import LessonsResponse, LessonResponse
-from services.auth_service import get_current_active_user
-from database import User, Group, get_session, GroupsCourses, Course, CoursesLessons
+from models.site.lesson import LessonsResponse, LessonResponse, LessonPostRequest
+from services.auth_service import get_current_active_user, get_teacher_or_admin
+from database import User, Group, get_session, GroupsCourses, Course, CoursesLessons, Lesson
 from services.course_service import CourseService
 from services.courses_lessons_service import CoursesLessonsService
 from services.groups_courses_serivce import GroupsCoursesService
+from services.lesson_service import LessonService
 from services.users_groups_service import UsersGroupsService
 
 router = APIRouter(
@@ -76,3 +77,23 @@ async def get_lesson(group_id: int,
                                                                               lesson_id,
                                                                               session)
     return LessonResponse.from_orm(course_lesson.lesson)
+
+
+@router.post("/", response_model=LessonResponse)
+async def post_lesson(lesson_request: LessonPostRequest,
+                      current_user=Depends(get_teacher_or_admin),
+                      session: AsyncSession = Depends(get_session)) -> LessonResponse:
+    lesson = Lesson(*lesson_request.dict())
+    session.add(lesson)
+    await session.commit()
+    return LessonResponse.from_orm(lesson)
+
+
+@router.put("/", response_model=LessonResponse)
+async def put_lesson(lesson_request: LessonPostRequest,
+                     current_user=Depends(get_teacher_or_admin),
+                     session: AsyncSession = Depends(get_session)) -> LessonResponse:
+    lesson = await LessonService.get_lesson(lesson_request.id, session)
+    lesson.update(**lesson_request.dict())
+    await session.commit()
+    return LessonResponse.from_orm(lesson)
