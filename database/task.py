@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import relationship
 
 from database import Base
-from database.base_meta import SQLAlchemyBase
+from database.base_meta import Base, SQLAlchemyAdditional
 from database.solution import SolutionStatus
 
 
@@ -15,7 +15,7 @@ class TaskType(IntEnum):
     ADDITIONAL_WORK = 3
 
 
-class Task(SQLAlchemyBase):
+class Task(Base, SQLAlchemyAdditional):
     __tablename__ = "dbo_task"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

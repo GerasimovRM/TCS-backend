@@ -18,6 +18,7 @@ from config import SECRET_KEY, JWT_ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from fastapi import Response
 
 from models.site.token import TokenData
+from services.user_service import UserService
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -95,6 +96,7 @@ def create_jwt_token(data: dict,
 
 async def get_current_user(token: str = Depends(oauth2_scheme),
                            session: AsyncSession = Depends(get_session)) -> User:
+    print(session)
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -114,29 +116,30 @@ async def get_current_user(token: str = Depends(oauth2_scheme),
     return user
 
 
-async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
+async def get_current_active_user(current_user: User = Depends(get_current_user),
+                                  session: AsyncSession = Depends(get_session)) -> User:
     if current_user.status != UserStatus.ACTIVE:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
     return current_user
 
 
-async def get_admin(current_user: User = Depends(get_current_active_user),
+async def get_admin(current_user: User = Depends(get_current_user),
                     session: AsyncSession = Depends(get_session)) -> User:
-    admin_query = await session.execute(select(Admin).where(Admin.user_id == current_user.id))
-    admin = admin_query.scalars().first()
-    if not admin:
+    is_admin = await UserService.is_admin(current_user.id, session)
+    if not is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not admin")
     return current_user
 
 
-async def get_teacher(current_user: User = Depends(get_current_active_user)) -> User:
-    teacher = current_user.teacher
-    if not teacher:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not teacher")
-    return current_user
+async def get_teacher(current_user: User = Depends(get_current_user),
+                      session: AsyncSession = Depends(get_session)) -> User:
+    s = await session.execute(Teacher)
+    res = s.scalars().first()
+    return res
 
 
-async def get_teacher_or_admin(current_user: User = Depends(get_current_active_user)) -> User:
+async def get_teacher_or_admin(current_user: User = Depends(get_current_active_user),
+                               ) -> User:
     try:
         teacher = await get_teacher(current_user)
     except HTTPException:

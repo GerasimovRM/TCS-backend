@@ -83,7 +83,7 @@ async def get_lesson(group_id: int,
 async def post_lesson(lesson_request: LessonPostRequest,
                       current_user=Depends(get_teacher_or_admin),
                       session: AsyncSession = Depends(get_session)) -> LessonResponse:
-    lesson = Lesson(*lesson_request.dict())
+    lesson = Lesson(**lesson_request.dict())
     session.add(lesson)
     await session.commit()
     return LessonResponse.from_orm(lesson)
@@ -94,6 +94,6 @@ async def put_lesson(lesson_request: LessonPostRequest,
                      current_user=Depends(get_teacher_or_admin),
                      session: AsyncSession = Depends(get_session)) -> LessonResponse:
     lesson = await LessonService.get_lesson(lesson_request.id, session)
-    lesson.update(**lesson_request.dict())
+    lesson.update_by_pydantic(lesson_request)
     await session.commit()
     return LessonResponse.from_orm(lesson)

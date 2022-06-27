@@ -2,10 +2,10 @@ from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
 from database import Base
-from database.base_meta import SQLAlchemyBase
+from database.base_meta import Base, SQLAlchemyAdditional
 
 
-class RefreshToken(SQLAlchemyBase):
+class RefreshToken(Base, SQLAlchemyAdditional):
     __tablename__ = "dbo_refresh_token"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

@@ -2,10 +2,10 @@ from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship
 
 from database import Base
-from database.base_meta import SQLAlchemyBase
+from database.base_meta import Base, SQLAlchemyAdditional
 
 
-class LessonsTasks(SQLAlchemyBase):
+class LessonsTasks(Base, SQLAlchemyAdditional):
     __tablename__ = "dbo_lessons_tasks"
 
     lesson_id = Column(ForeignKey("dbo_lesson.id"), primary_key=True)

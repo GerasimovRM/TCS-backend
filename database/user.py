@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 from . import Base
 from sqlalchemy import Integer, String, Column, Enum
 
-from .base_meta import SQLAlchemyBase
+from .base_meta import Base, SQLAlchemyAdditional
 
 
 class UserStatus(IntEnum):
@@ -14,7 +14,7 @@ class UserStatus(IntEnum):
     UNDEFINED: int = -1
 
 
-class User(SQLAlchemyBase):
+class User(Base, SQLAlchemyAdditional):
     __tablename__ = "dbo_user"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

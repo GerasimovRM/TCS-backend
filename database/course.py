@@ -2,10 +2,10 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 
 from database import Base
-from database.base_meta import SQLAlchemyBase
+from database.base_meta import Base, SQLAlchemyAdditional
 
 
-class Course(SQLAlchemyBase):
+class Course(Base, SQLAlchemyAdditional):
     __tablename__ = "dbo_course"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
