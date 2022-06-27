@@ -5,8 +5,7 @@ from sqlalchemy import Column, Integer, String, Float, ForeignKeyConstraint, Boo
     DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
-from database import Base
-from database.base_meta import Base, SQLAlchemyAdditional
+from database.base_meta import BaseSQLAlchemyModel
 
 
 class SolutionStatus(IntEnum):
@@ -16,7 +15,7 @@ class SolutionStatus(IntEnum):
     COMPLETE: int = 2
 
 
-class Solution(Base, SQLAlchemyAdditional):
+class Solution(BaseSQLAlchemyModel):
     __tablename__ = "dbo_solution"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

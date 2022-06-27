@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from database.users_groups import UserGroupRole, UsersGroups
 from models.pydantic_sqlalchemy_core import LessonDto
-from models.site.lesson import LessonsResponse, LessonResponse, LessonPostRequest
+from models.site.lesson import LessonsResponse, LessonResponse, LessonPostRequest, LessonRequest
 from services.auth_service import get_current_active_user, get_teacher_or_admin
 from database import User, Group, get_session, GroupsCourses, Course, CoursesLessons, Lesson
 from services.course_service import CourseService
@@ -81,7 +81,7 @@ async def get_lesson(group_id: int,
 
 @router.post("/", response_model=LessonResponse)
 async def post_lesson(lesson_request: LessonPostRequest,
-                      current_user=Depends(get_teacher_or_admin),
+                      current_user: User = Depends(get_teacher_or_admin),
                       session: AsyncSession = Depends(get_session)) -> LessonResponse:
     lesson = Lesson(**lesson_request.dict())
     session.add(lesson)
@@ -90,10 +90,19 @@ async def post_lesson(lesson_request: LessonPostRequest,
 
 
 @router.put("/", response_model=LessonResponse)
-async def put_lesson(lesson_request: LessonPostRequest,
-                     current_user=Depends(get_teacher_or_admin),
+async def put_lesson(lesson_request: LessonRequest,
+                     current_user: User = Depends(get_teacher_or_admin),
                      session: AsyncSession = Depends(get_session)) -> LessonResponse:
     lesson = await LessonService.get_lesson(lesson_request.id, session)
     lesson.update_by_pydantic(lesson_request)
     await session.commit()
     return LessonResponse.from_orm(lesson)
+
+
+@router.delete("/")
+async def delete_lesson(lesson_id: int,
+                        current_user: User = Depends(get_current_active_user),
+                        session: AsyncSession = Depends(get_session)):
+    lesson = await LessonService.get_lesson(lesson_id, session)
+    await session.delete(lesson)
+    return {"detail": "ok"}  # TODO: common classes

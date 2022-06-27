@@ -46,6 +46,10 @@ class UserService:
     @staticmethod
     async def is_admin_or_teacher(user_id: int,
                                   session: AsyncSession) -> bool:
-        is_admin = await UserService.is_teacher(user_id, session)
+        is_admin = await UserService.is_admin(user_id, session)
+        if is_admin:
+            return True
         is_teacher = await UserService.is_teacher(user_id, session)
-        return is_teacher or is_admin
+        if is_teacher:
+            return True
+        return False
