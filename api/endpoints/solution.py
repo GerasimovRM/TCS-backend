@@ -11,7 +11,7 @@ from database.users_groups import UserGroupRole
 from database import User, UsersGroups, CoursesLessons, get_session, GroupsCourses, LessonsTasks
 from models.pydantic_sqlalchemy_core import SolutionDto
 from models.site.solution import SolutionsCountResponse, SolutionResponse
-from services.auth_service import get_current_active_user
+from services.auth_service import get_current_active_user, get_admin
 from services.courses_lessons_service import CoursesLessonsService
 from services.groups_courses_serivce import GroupsCoursesService
 from services.lessons_tasks_service import LessonsTasksService
@@ -236,3 +236,12 @@ async def post_solution(group_id: int,
     session.add(solution)
     await session.commit()
     return SolutionResponse.from_orm(solution)
+
+
+@router.delete("/")
+async def delete_solution(solution_id: int,
+                          current_user: User = Depends(get_admin),
+                          session: AsyncSession = Depends(get_session)):
+    solution = await SolutionService.get_solution_by_id(solution_id, session)
+    await session.delete(solution)
+    return {"detail": "ok"}

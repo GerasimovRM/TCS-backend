@@ -11,7 +11,7 @@ from database.users_groups import UserGroupRole, UsersGroups
 from models.pydantic_sqlalchemy_core import TaskDto
 from models.site.group import GroupsResponse
 from models.site.task import TasksResponse
-from services.auth_service import get_current_active_user
+from services.auth_service import get_current_active_user, get_admin
 from database import User, Group, get_session, GroupsCourses, CoursesLessons, Lesson, LessonsTasks, \
     Solution, Image, ChatMessage
 from services.courses_lessons_service import CoursesLessonsService
@@ -94,6 +94,12 @@ async def get_task(group_id: int,
             detail="Bad access to task")
     task_dto = TaskDto.from_orm(lesson_task.task)
     return task_dto
+
+
+@router.put("/")
+async def put_task(current_user: User = Depends(get_admin),
+                   session: AsyncSession = Depends(get_session)):
+    task = await TaskService
 
 
 @router.post("/upload_image")

@@ -37,5 +37,5 @@ class CoursesLessonsService:
                                       .options(
             joinedload(CoursesLessons.lesson)
         ))
-        course_lesson = query.scalars().all()
+        course_lesson = query.scalars().first()
         return course_lesson

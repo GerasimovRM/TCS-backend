@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 
 
-# TODO: нахуя оно вообще в проекте?
-class BaseError(BaseModel):
+class BaseError(Exception):
     error: str
     error_description: str
