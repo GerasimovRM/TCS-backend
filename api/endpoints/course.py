@@ -7,9 +7,10 @@ from sqlalchemy.orm import joinedload
 
 from database.users_groups import UserGroupRole, UsersGroups
 from models.pydantic_sqlalchemy_core import CourseDto
-from models.site.course import CoursesResponse, CourseResponse
-from services.auth_service import get_current_active_user
+from models.site.course import CoursesResponse, CourseResponse, CoursePutRequest
+from services.auth_service import get_current_active_user, get_admin
 from database import User, Course, Group, get_session, GroupsCourses
+from services.course_service import CourseService
 from services.groups_courses_serivce import GroupsCoursesService
 from services.group_service import GroupService
 from services.users_groups_service import UsersGroupsService
@@ -51,3 +52,22 @@ async def get_courses(group_id: int,
             detail="Bad access to group")
     group_course = await GroupsCoursesService.get_group_course_with_courses(group_id, course_id, session)
     return CourseResponse.from_orm(group_course.course)
+
+
+@router.put("/", response_model=CourseResponse)
+async def put_course(course_request: CoursePutRequest,
+                     current_user: User = Depends(get_admin),
+                     session: AsyncSession = Depends(get_session)):
+    course = await CourseService.get_course(course_request.id, session)
+    course.update_by_pydantic(course_request)
+    await session.commit()
+    return CourseResponse.from_orm(course)
+
+
+@router.delete("/")
+async def delete_course(course_id: int,
+                        current_user: User = Depends(get_admin),
+                        session: AsyncSession = Depends(get_session)):
+    course = await CourseService.get_course(course_id, session)
+    await session.delete(course)
+    return {"detail": "ok"}
